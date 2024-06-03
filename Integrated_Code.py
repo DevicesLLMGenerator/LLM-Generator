@@ -765,6 +765,30 @@ def get_conversational_chain_quant_classify2():
                         GROUP BY ASPECT
                         ORDER BY REVIEW_COUNT_PERCENTAGE DESC
                         
+                        
+                    User can ask Product Family 1 vs Product Family 2 or compare aspect wise sentiment of Product Family 1 and Product Family 2 or Compare Product Family 1 and Product Family 2.
+                    
+                    For all the comparison related user query, the format should remain the same. 
+                    
+                    Format: 
+                        
+                    11. Compare aspect sentiment of different Product Family Name :
+                    
+                        SELECT PRODUCT_FAMILY, ASPECT, ((SUM(SENTIMENT_SCORE)*1.0)/(SUM(REVIEW_COUNT)*1.0)) * 100 AS NET_SENTIMENT, SUM(REVIEW_COUNT) as Review_Count
+                        FROM Copilot_Sentiment_Data
+                        GROUP BY PRODUCT_FAMILY, ASPECT
+                        ORDER BY NET_SENTIMENT DESC
+                        
+                    12. Compare aspect wise net sentiment of [ProductFamily 1] and [Product Family 2].
+                    
+                        SELECT PRODUCT_FAMILY, ASPECT, ((SUM(SENTIMENT_SCORE)*1.0)/(SUM(REVIEW_COUNT)*1.0)) * 100 AS NET_SENTIMENT, SUM(REVIEW_COUNT) as Review_Count
+                        FROM Copilot_Sentiment_Data
+                        GROUP BY PRODUCT_FAMILY, ASPECT
+                        HAVING PRODUCT_FAMILY like '%Product Family 1%' or PRODUCT_FAMILY like '%Product Family 2%'
+                        ORDER BY NET_SENTIMENT DESC
+                        
+                    Same goes for all comparisions.
+
                     This is how you should calculate review count mix of Github copilot across different Aspect.
                         
                     Net sentiment is calculcated by sum of Sentiment_Score divided by sum of Review_Count. It should be in percentage. Example:
@@ -1389,6 +1413,35 @@ def custom_color_gradient(val, vmin=-100, vmax=100):
     return f'background-color: {hex_color}; color: black;'
 
 
+def custom_color_gradient_compare(val, vmin=-100, vmax=100):
+    green_hex = '#347c47'
+    middle_hex = '#dcdcdc'
+    lower_hex = '#b0343c'
+    
+    # Adjust the normalization to set the middle value as 0
+    try:
+        # Normalize the value to be between -1 and 1 with 0 as the midpoint
+        normalized_val = (val - vmin) / (vmax - vmin) * 2 - 1
+    except ZeroDivisionError:
+        normalized_val = 0
+    
+    if normalized_val <= 0:
+        # Interpolate between lower_hex and middle_hex for values <= 0
+        r = int(np.interp(normalized_val, [-1, 0], [int(lower_hex[1:3], 16), int(middle_hex[1:3], 16)]))
+        g = int(np.interp(normalized_val, [-1, 0], [int(lower_hex[3:5], 16), int(middle_hex[3:5], 16)]))
+        b = int(np.interp(normalized_val, [-1, 0], [int(lower_hex[5:7], 16), int(middle_hex[5:7], 16)]))
+    else:
+        # Interpolate between middle_hex and green_hex for values > 0
+        r = int(np.interp(normalized_val, [0, 1], [int(middle_hex[1:3], 16), int(green_hex[1:3], 16)]))
+        g = int(np.interp(normalized_val, [0, 1], [int(middle_hex[3:5], 16), int(green_hex[3:5], 16)]))
+        b = int(np.interp(normalized_val, [0, 1], [int(middle_hex[5:7], 16), int(green_hex[5:7], 16)]))
+    
+    # Convert interpolated RGB values to hex format for CSS color styling
+    hex_color = f'#{r:02x}{g:02x}{b:02x}'
+    
+    return f'background-color: {hex_color}; color: black;'
+
+
 # In[11]:
 
 
@@ -1543,18 +1596,19 @@ Quantifiable and Visualization:
             "Give me the aspect sentiment of [Product Family]."
             "Which Product Family has the highest review count?" .
             "Net sentiment of [Product Family 1], [Product Family 2], [Product Family 3],..etc.?
+        - Important - Compare aspect wise net sentiment of different Product Families or different copilot version - In this case, it should not choose this function.
        - Do not choose this for general questions.
        - Whenver user asks about top 20 aspects, keywords choose this function
        
 Comparison:
-
+        Basically compares the aspect wise sentiment/aspect wise net sentiment of 2 or more Product Families.
+            Eg: Compare aspect wise net sentiment of different Product Families or different copilot version - In this case, it should choose this function.
         - Compares two different Product Families based on user reviews.
-        - Choose this if exactly two Product Families are mentioned. If more than two devices are mentioned, do not choose this function. Choose either "Quantifiable and Visualization" or "Generic" Based on the user Question.
        Examples:
         - "Compare [Product Family 1] and [Product Family 2] on performance."
-        - Do not choose Comparison if more than two Product Families are mentioned.
         - Compare [Product 1], [Product 2] - In this case, it should choose this function
-        - IMPORTANT : Compare [Product 1], [Product 2], [Product 3], .... - In this case, you should not choose this function instead it should choose either Qunatifiable/Generic as more than 2 devices are mentioned.
+        - IMPORTANT : Compare [Product 1], [Product 2], [Product 3], ...
+        - IMPORTANT : Compare aspect wise net sentiment of different Product Families or different copilot version - In this case, it should choose this function.
 
 Generic:
 
@@ -1624,65 +1678,53 @@ def get_conversational_chain_detailed_compare():
         Product = Microsoft Copilot, Copilot in Windows 11, Copilot, Github Copilot , Copilot for Security, Copilot Pro, Copilot for Microsoft 365, Copilot for Mobile
 
         
-        1. Your Job is to Summarize the user reviews and sentiment data you get as an input for 2 different Product that user mentioned.
+        1. Your Job is to Summarize the user reviews and sentiment data you get as an input for 2 or more Product that user mentioned.
+        
+        IMPORTANT : Do not just give summary of numbers, Give Pros and cons from reviews for wach aspect
         
         IMPORTANT : Mention their Positive and Negative of each Product for each aspects (What consumer feels) for each aspect.
         
         Example :
         
-        Summary of CoPilot for Mobile and Github Copilot:
+        Compare CoPilot for Mobile and Github Copilot:
         
-
-        Positive:
-
-        CoPilot for Mobile has a high sentiment score for aspects such as Productivity, Ease of Use, and Accessibility.
-        Users find it helpful for various tasks and appreciate its quick and informative responses.
-        The app is praised for its usefulness in both work and everyday life.
-        Negative:
-
-        Some users have reported issues with Connectivity and Reliability, mentioning network problems and automatic closing of the app.
-        There are concerns about Security/Privacy, with users mentioning the potential for data misuse.
-        Compatibility with certain devices and interfaces is also mentioned as an area for improvement.
-        Summary of GitHub CoPilot:
-
-        Positive:
-
-        GitHub CoPilot receives positive sentiment for aspects such as Interface and Innovation.
-        Users appreciate its code generation capabilities and find it helpful for their programming tasks.
-        The app is praised for its accuracy and ability to provide quick and relevant responses.
-        Negative:
-
-        Some users have reported issues with Reliability and Compatibility, mentioning problems with generating images and recognizing certain commands.
-        There are concerns about Security/Privacy, with users mentioning the potential for data misuse.
-        Users also mention the need for improvements in the app's interface and connectivity.
-        Overall, both CoPilot for Mobile and GitHub CoPilot have received positive feedback for their productivity and code generation capabilities. However, there are areas for improvement such as connectivity, reliability, compatibility, and security/privacy. Users appreciate the ease of use and quick responses provided by both apps.
-     
         
-        IMPORTANT : If user asks to compare any specific aspects of two device, Give detailed summary like how much reviews is being spoken that aspect in each device, net sentiment and theire Pros and cons on that device (Very Detailed).
-        
-            Summary of Code Generation feature for CoPilot for Mobile:
+        VERY IMPORTANT : KEEP THE TEMPLATE SAME FOR ALL THE COMPARISION RELATED USER QUESTIONS.
+            
+            Summary of Copilot for Mobile:
+            
+            Positive:
 
-                    Positive:
 
-                    Users have praised the Code Generation feature of CoPilot for Mobile, with a high sentiment score of 8.5.
-                    The feature is described as helpful and efficient in generating code that aligns with project standards and practices.
-                    Users appreciate the convenience and time-saving aspect of the Code Generation feature.
-                    Negative:
+            List down all the pros of Copilot for Mobile in pointers
+            
+            
+            Negative:
+            
+            List down all the cons of Copilot for Mobile in pointers
+            
+            
+            Summary of GitHub CoPilot:
 
-                    No negative reviews or concerns were mentioned specifically for the Code Generation feature of CoPilot for Mobile.
-                    Summary of Code Generation feature for GitHub CoPilot:
+            Positive:
 
-                    Positive:
+            List down all the cons of Github Copilot in pointers
 
-                    Users have a positive sentiment towards the Code Generation feature of GitHub CoPilot, with a sentiment score of 5.4.
-                    The feature is described as a game-changer for developer productivity.
-                    Users appreciate the ability of GitHub CoPilot to generate code that aligns with project standards and practices.
-                    Negative:
+            
+            Negative:
+            
+            List down all the Pros of Github Copilot in pointers
 
-                    No negative reviews or concerns were mentioned specifically for the Code Generation feature of GitHub CoPilot.
-                    Overall, both CoPilot for Mobile and GitHub CoPilot have received positive feedback for their Code Generation capabilities. Users find the feature helpful, efficient, and a game-changer for developer productivity. No negative reviews or concerns were mentioned for the Code Generation feature of either product.
+            Overall, both CoPilot for Mobile and GitHub CoPilot have received positive feedback for their productivity and code generation capabilities. However, there are areas for improvement such as connectivity, reliability, compatibility, and security/privacy. Users appreciate the ease of use and quick responses provided by both apps.
+            
+            
+            
+            If there are 3 or more Product, follow the same template and provide pros and cons for the same as well.
         
         Give a detailed summary for each aspects using the reviews. Use maximum use of the reviews. Do not use your pretrained data. Use the data provided to you. For each aspects. Summary should be 3 ro 4 lines
+        
+        
+        VERY IMPORTANT : If user mentioned different Product Families/Copilot versions, Give Pros and cons that user mentioned for all the aspects for each Product Families.
 
                     
           Enhance the model’s comprehension to accurately interpret user queries by:
@@ -1863,58 +1905,39 @@ def user_ques(user_question_1, user_question, classification):
 
         if classification == "Comparison":
             try:
-                col1,col2 = st.columns(2) 
-                data = query_quant(user_question_1,[])
-                e = data.to_dict(orient='records')
-                device_a_table,device_b_table = split_table(data,device_a,device_b)   
-                with col1:
-                    device_a_table = device_a_table.dropna(subset=['ASPECT_SENTIMENT'])
-                    device_a_table = device_a_table[~device_a_table["ASPECT"].isin(["Generic", "Account", "Customer-Service", "Browser"])]
-                    device_a_table = device_a_table[device_a_table['ASPECT_SENTIMENT'] != 0]
-                    device_a_table = device_a_table[device_a_table['ASPECT'] != 'Generic']
-                    device_a_table = device_a_table.sort_values(by='REVIEW_COUNT', ascending=False)
-                    styled_df_a = device_a_table.style.applymap(lambda x: custom_color_gradient(x, int(-100), int(100)), subset=['ASPECT_SENTIMENT'])
-                    data_filtered = device_a_table[(device_a_table["ASPECT"] != device_a) | (device_a_table["ASPECT"] != device_b) & (device_a_table["ASPECT"] != 'Generic')]
-                    top_four_aspects = data_filtered.head(4)
-                    c = device_a_table.to_dict(orient='records')
-                    device_a_table_to_str = device_a_table.to_string(index=False)
-                    st.dataframe(styled_df_a)
-                    first_table = styled_df_a.to_html(index = False)
-                    full_response += first_table
-                    history = check_history_length(history,device_a_table_to_str)
-                    save_list(history)
-
-
-                with col2:
-
-                    device_b_table = device_b_table.dropna(subset=['ASPECT_SENTIMENT'])
-                    device_b_table = device_b_table[~device_b_table["ASPECT"].isin(["Generic", "Account", "Customer-Service", "Browser"])]
-                    device_b_table = device_b_table[device_b_table['ASPECT_SENTIMENT'] != 0]
-                    device_b_table = device_b_table[device_b_table['ASPECT'] != 'Generic']
-                    device_b_table = device_b_table.sort_values(by='REVIEW_COUNT', ascending=False)
-                    styled_df_b = device_b_table.style.applymap(lambda x: custom_color_gradient(x, int(-100), int(100)), subset=['ASPECT_SENTIMENT'])
-                    data_filtered = device_b_table[(device_b_table["ASPECT"] != device_b) | (device_b_table["ASPECT"] != device_a) & (device_b_table["ASPECT"] != 'Generic')]
-                    top_four_aspects = data_filtered.head(4)
-                    d = device_b_table.to_dict(orient='records')
-                    device_b_table_to_str = device_b_table.to_string(index=False)
-                    st.dataframe(styled_df_b)
-                    second_table = styled_df_b.to_html(index = False)
-                    full_response += second_table
-                    history = check_history_length(history,device_b_table_to_str)
-                    save_list(history)
+                data = quantifiable_data(user_question_1)
+                # st.dataframe(data)
+                data_formatted = data
                 try:
-                    user_question_1 = user_question_1.replace("Compare", "Summarize reviews of")
-                except:
+                    data_formatted['REVIEW_COUNT'] = data_formatted['REVIEW_COUNT'].astype(str).str.replace(',', '').astype(float).astype(int)      
+                    aspect_volume = data_formatted.groupby('Aspect')['REVIEW_COUNT'].sum().reset_index()
+
+                    # Merge the total volume back to the original dataframe
+                    data_formatted = data_formatted.merge(aspect_volume, on='Aspect', suffixes=('', '_Total'))
+
+                    # Sort the dataframe based on the total volume
+                    data_formatted = data_formatted.sort_values(by='REVIEW_COUNT_Total', ascending=False)
+
+                    # Pivot the DataFrame
+                    pivot_df = data_formatted.pivot_table(index='Aspect', columns='Product_Family', values='NET_SENTIMENT')
+                    pivot_df = pivot_df.reindex(data_formatted['Aspect'].drop_duplicates().values)
+                    dataframe_as_dict = pivot_df.to_dict(orient='records')
+                    pivot_df = pivot_df.astype(int)
+                    styled_df_comaparison = pivot_df.style.applymap(custom_color_gradient_compare)
+                    styled_df_comaparison_new = styled_df_comaparison.set_properties(**{'text-align': 'center'})
+                    st.dataframe(styled_df_comaparison_new)
+                    styled_df_comaparison_html = styled_df_comaparison.to_html(index=False)
+                    full_response += styled_df_comaparison_html
+                except Exception as e:
+                    print(e)
                     pass
-                comparision_summary = query_detailed_compare(user_question + "Which have the following sentiment data" + str(c)+str(d))
+                comparision_summary = query_detailed_compare(user_question + "Which have the following sentiment data" + str(dataframe_as_dict))
                 st.write(comparision_summary)
                 full_response += comparision_summary
                 history = check_history_length(history,comparision_summary)
-                save_list(history)
-                
+                save_list(history) 
             except:
                 try:
-                    st.dataframe(data)
                     comparision_summary = query_detailed_compare(user_question + "Which have the following sentiment data" + str(e))
                     st.write(comparision_summary)
                     full_response += comparision_summary
