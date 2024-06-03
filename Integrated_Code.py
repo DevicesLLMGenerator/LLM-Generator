@@ -712,6 +712,8 @@ def get_conversational_chain_quant_classify2():
                                 
                                 Same goes for all the columns
 
+                   IMPORTANT : Copilot is the Product and Product_Famiies are different versions of Copilot
+
                     1. If the user asks for count of column 'X', the query should be like this:
                             SELECT COUNT('X') 
                             FROM Copilot_Sentiment_Data
