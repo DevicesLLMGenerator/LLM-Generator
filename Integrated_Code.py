@@ -766,7 +766,7 @@ def get_conversational_chain_quant_classify2():
                         ORDER BY REVIEW_COUNT_PERCENTAGE DESC
                         
                         
-                    User can ask "Product Family 1 vs Product Family 2" or "compare aspect wise sentiment of Product Family 1 and Product Family 2" or "Compare Product Family 1 and Product Family 2" and anything related to comparison.
+                    User can ask "Product Family 1 vs Product Family 2" or "compare aspect wise sentiment of Product Family 1 and Product Family 2" or "Compare Product Family 1 and Product Family 2" and anything related to comparison."Compare different versions of copilot"
                     
                     For all the comparison related user query, the format should remain the same. i.e., the column names that we are giving as alias should remain the same. Do not change the schema. 
                     
