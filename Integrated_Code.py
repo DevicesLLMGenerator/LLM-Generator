@@ -1950,7 +1950,8 @@ def user_ques(user_question_1, user_question, classification):
                     history = check_history_length(history,comparision_summary)
                     save_list(history)
                 except:
-                    st.write(f"Unable to fetch relevant details based on the provided input. Kindly refine your search query and try again!")
+                    error = "Unable to fetch relevant details based on the provided input. Kindly refine your search query and try again!"
+                    st.write(error)   
 
 
         elif (device_a != None and device_b == None) | (device_a == None and device_b == None) | (device_a != None and device_b != None):
@@ -2029,10 +2030,11 @@ def user_ques(user_question_1, user_question, classification):
                         if(len(data))>1:
                             generate_chart(data)
                     else:
-                        st.write(f"Unable to fetch relevant details based on the provided input. Kindly refine your search query and try again!")
+                        error = "Unable to fetch relevant details based on the provided input. Kindly refine your search query and try again!"
+                        st.write(error)
             except Exception as e:
-                st.write(f"Unable to fetch relevant details based on the provided input. Kindly refine your search query and try again!")
-                print(e)    
+                error = "Unable to fetch relevant details based on the provided input. Kindly refine your search query and try again!"
+                st.write(error)   
         else:
             print('No Flow')
             
