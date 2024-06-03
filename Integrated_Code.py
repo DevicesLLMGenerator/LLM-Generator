@@ -1609,6 +1609,7 @@ Comparison:
         - Compare [Product 1], [Product 2] - In this case, it should choose this function
         - IMPORTANT : Compare [Product 1], [Product 2], [Product 3], ...
         - IMPORTANT : Compare aspect wise net sentiment of different Product Families or different copilot version - In this case, it should choose this function.
+        -Compare different versions of copilot - In this case, it should choose this function.
 
 Generic:
 
@@ -1708,15 +1709,16 @@ def get_conversational_chain_detailed_compare():
 
             Positive:
 
-            List down all the cons of Github Copilot in pointers
+            List down all the Pros of Github Copilot in pointers
 
             
             Negative:
             
-            List down all the Pros of Github Copilot in pointers
+            List down all the cons of Github Copilot in pointers
 
-            Overall, both CoPilot for Mobile and GitHub CoPilot have received positive feedback for their productivity and code generation capabilities. However, there are areas for improvement such as connectivity, reliability, compatibility, and security/privacy. Users appreciate the ease of use and quick responses provided by both apps.
             
+            
+            Overall, both CoPilot for Mobile and GitHub CoPilot have received positive feedback for their productivity and code generation capabilities. However, there are areas for improvement such as connectivity, reliability, compatibility, and security/privacy. Users appreciate the ease of use and quick responses provided by both apps.
             
             
             If there are 3 or more Product, follow the same template and provide pros and cons for the same as well.
