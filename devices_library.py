@@ -41,15 +41,14 @@ global full_response
 full_response = ""
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
-#Initializing API Keys to use LLM
-os.environ["AZURE_OPENAI_API_KEY"] = "3a3850af863b4dddbc2d3834f0ff097b"
-os.environ["AZURE_OPENAI_ENDPOINT"] = "https://fordmustang.openai.azure.com/"
+AZURE_OPENAI_API_KEY = os.environ.get("AZURE_OPENAI_API_KEY")
+AZURE_OPENAI_ENDPOINT = os.environ.get("AZURE_OPENAI_ENDPOINT")
 
 
 client = AzureOpenAI(
-    api_key=os.getenv("3a3850af863b4dddbc2d3834f0ff097b"),  
+    api_key=os.getenv("AZURE_OPENAI_API_KEY"),  
     api_version="2024-02-01",
-    azure_endpoint = os.getenv("https://fordmustang.openai.azure.com/")
+    azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
     )
 
 deployment_name='Surface_Analytics'
@@ -60,10 +59,6 @@ RCR_Sales_Data = pd.read_csv('RCR Sales Data Sample V3.csv')
 dev_mapping = pd.read_csv('SalesSentimentMapping.csv')
 Devices_Sentiment_Data  = pd.read_csv("Windows_Data_116K.csv")
 
-
-
-# if 'selected_device_comparison' not in st.session_state:
-#     st.session_state['selected_device_comparison'] = None
 
 def Sentiment_Score_Derivation(value):
     try:
@@ -395,16 +390,35 @@ def get_device_image(user_input):
     try:
         # Assuming the images are in a folder named 'Device Images'
         img_folder = 'Device Images'
-        img_path = os.path.join(img_folder, f"{dev}.jpg")
+        img_path = os.path.join(img_folder, f"{dev}.JPG")
         if not os.path.exists(img_path):
-            img_path = None
+            img_path = os.path.join(img_folder, "IMAGE NOT FOUND.JPG")
+            if not os.path.exists(img_path):
+                return None
     except:
         img_path = None
         print(f"Error in getting device image for {user_input}")
+    print(f"Inside get_device_image: \nDevice Name: {dev}\nDevice Image: {img_path}")
     return (dev, img_path)
     
 def get_net_sentiment(device_name):
-    a = query_quant_devices(device_name)
+    SQL_Query = f"""SELECT 'TOTAL' AS Aspect, 
+                        ROUND((SUM(Sentiment_Score) / SUM(Review_Count)) * 100, 1) AS Aspect_Sentiment, 
+                        SUM(Review_Count) AS Review_Count
+                        FROM Devices_Sentiment_Data
+                        WHERE Product_Family LIKE '{device_name}'
+
+                        UNION
+
+                        SELECT Aspect, 
+                        ROUND((SUM(Sentiment_Score) / SUM(Review_Count)) * 100, 1) AS Aspect_Sentiment, 
+                        SUM(Review_Count) AS Review_Count
+                        FROM Devices_Sentiment_Data
+                        WHERE Product_Family LIKE '%{device_name}%'
+                        GROUP BY Aspect
+                        ORDER BY Review_Count DESC"""
+    SQL_Query = process_tablename(SQL_Query,"Devices_Sentiment_Data")
+    a = ps.sqldf(SQL_Query, globals())
     try:
         Net_Sentiment = float(a[a['ASPECT']=='TOTAL']['ASPECT_SENTIMENT'].values[0])
         aspects = a["ASPECT"].unique()
@@ -742,6 +756,7 @@ def query_to_embedding_summarize(user_question, txt_file_path):
 
 def generate_device_details(device_input):
     global interaction
+    print(f"Input for Generate Device Details: {device_input}")
     device_name, img_link = get_device_image(device_input)
     net_Sentiment,aspect_sentiment = get_net_sentiment(device_name)
     sales_device_name = get_sales_device_name(device_name)
@@ -847,17 +862,18 @@ def identify_devices(input_string):
         if device == "UNDEFINED":
             continue
         elif device in input_string:
-            return device
+            return get_sentiment_device_name(device)
     
     most_matching_device_sales = process.extractOne(input_string, devices_list_sales, scorer=fuzz.token_set_ratio)
     
     if most_matching_device_sales[1] >= 60:
-        return most_matching_device_sales[0]
+        return get_sentiment_device_name(most_matching_device_sales[0])
     else:
         return "Device not available"
         
 def device_summarization(user_input):
     global full_response
+    print(f"Device Summarization Input: {user_input}")
     if user_input == "Device not availabe":
         message = "I don't have sufficient data to provide a complete and accurate response at this time. Please provide more details or context."
         st.write(message)
