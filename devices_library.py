@@ -59,7 +59,6 @@ RCR_Sales_Data = pd.read_csv('RCR Sales Data Sample V3.csv')
 dev_mapping = pd.read_csv('SalesSentimentMapping.csv')
 Devices_Sentiment_Data  = pd.read_csv("Windows_Data_116K.csv")
 
-
 def Sentiment_Score_Derivation(value):
     try:
         if value == "Positive":
@@ -472,25 +471,26 @@ def get_comp_device_details(user_input, df1):
     try:
         # Assuming the images are in a folder named 'Device Images'
         img_folder = 'Device Images'
-        img_path = os.path.join(img_folder, f"{sentiment_device_name}.jpg")
+        img_path = os.path.join(img_folder, f"{sentiment_device_name}.JPG")
         if not os.path.exists(img_path):
-            img_not_found = "Image Not Found"
-            img_path = os.path.join(img_folder, f"{img_not_found}.jpg")
+            img_not_found = "IMAGE NOT FOUND"
+            img_path = os.path.join(img_folder, f"{img_not_found}.JPG")
+        print(f"Image path for competitor device {sentiment_device_name}/{user_input}: {img_path}")
     except:
         img_path = None
-        print(f"Error in getting device image for {user_input}")
+        print(f"Error in getting competitor device image: {user_input}")
     if sales_data.empty:
         return user_input, img_path, None, None, None  # Return dev and link, but None for sales and ASP if no matching SERIES is found
     
     try:
         sales = str(round(float(sales_data['SALES_UNITS'].values[0]) / 1000, 2)) + "K"
     except:
-        print(f"Error in getting sales data for {user_input}")
+        print(f"Error in getting competitor sales data: {user_input}")
         sales = "NA"
     try:
         ASP = "$" + str(int(sales_data['COMPETITORASP'].values[0]))
     except:
-        print(f"Error in getting ASP for {user_input}")
+        print(f"Error in getting competitor ASP: {user_input}")
         ASP = "NA"
     net_sentiment,aspect_sentiment = get_net_sentiment(sentiment_device_name)
     return dev, img_path, sales, ASP, net_sentiment
@@ -881,8 +881,6 @@ def device_summarization(user_input):
     else:
         inp = user_input
         device_name, img_link, net_Sentiment, aspect_sentiment, total_sales, asp, high_specs, sale, star_rating_html, comp_devices = generate_device_details(inp)
-        summ = get_detailed_summary(inp)
-        full_response += summ
         html_code = f"""
         <div style="background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); display: flex; align-items: center;">
             <div style="flex: 1; text-align: center;">
@@ -901,6 +899,8 @@ def device_summarization(user_input):
         st.markdown(html_code, unsafe_allow_html=True)
         st.write("")
         st.write(r"$\textsf{\Large Detailed Summary}$")
+        summ = get_detailed_summary(inp)
+        full_response += summ
         st.write(summ)
         
         
@@ -917,7 +917,7 @@ def device_summarization(user_input):
                     with col_list[i]:
                         com_device_name, img_path, com_sales, ASP, net_sentiment = get_comp_device_details(comp_devices_list[i], comp_devices)
                         com_star_rating_html = get_star_rating_html(net_sentiment)
-                        with st.container(border = True, height = 280):
+                        with st.container(border = True, height = 300):
                             with st.container(border = False, height = 250):
                                 html_content = f"""
                                 <div style="text-align: center; display: inline-block; ">
